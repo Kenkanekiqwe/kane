@@ -1,0 +1,47 @@
+# Download and extract an official CEF binary distribution.
+# The archive URL and SHA-1 are pinned by the caller's version string and the
+# official CEF build server's sidecar checksum.
+function(kane_download_cef platform version download_dir)
+  set(distribution "cef_binary_${version}_${platform}")
+  set(archive "${download_dir}/${distribution}.tar.bz2")
+  set(root "${download_dir}/${distribution}")
+  file(MAKE_DIRECTORY "${download_dir}")
+
+  if(NOT IS_DIRECTORY "${root}")
+    string(REPLACE "+" "%2B" escaped_version "${version}")
+    set(url "https://cef-builds.spotifycdn.com/cef_binary_${escaped_version}_${platform}.tar.bz2")
+    set(checksum_url "${url}.sha1")
+    message(STATUS "Downloading CEF checksum: ${checksum_url}")
+    file(DOWNLOAD "${checksum_url}" "${archive}.sha1" STATUS checksum_status)
+    list(GET checksum_status 0 checksum_code)
+    if(NOT checksum_code EQUAL 0)
+      message(FATAL_ERROR "Failed to download CEF checksum: ${checksum_status}")
+    endif()
+    file(READ "${archive}.sha1" expected_sha1)
+    string(STRIP "${expected_sha1}" expected_sha1)
+
+    if(NOT EXISTS "${archive}")
+      message(STATUS "Downloading official CEF distribution with sandbox bootstrap")
+      file(DOWNLOAD "${url}" "${archive}" SHOW_PROGRESS EXPECTED_HASH SHA1=${expected_sha1} STATUS download_status)
+      list(GET download_status 0 download_code)
+      if(NOT download_code EQUAL 0)
+        message(FATAL_ERROR "Failed to download CEF: ${download_status}")
+      endif()
+    else()
+      file(SHA1 "${archive}" actual_sha1)
+      if(NOT actual_sha1 STREQUAL expected_sha1)
+        file(REMOVE "${archive}")
+        message(FATAL_ERROR "Existing CEF archive checksum did not match the official checksum; retry configure.")
+      endif()
+    endif()
+
+    message(STATUS "Extracting CEF distribution")
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xjf "${archive}"
+      WORKING_DIRECTORY "${download_dir}" RESULT_VARIABLE extract_result)
+    if(NOT extract_result EQUAL 0)
+      message(FATAL_ERROR "Failed to extract CEF archive")
+    endif()
+  endif()
+
+  set(CEF_ROOT "${root}" PARENT_SCOPE)
+endfunction()

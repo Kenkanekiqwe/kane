@@ -1,0 +1,90 @@
+name: Windows build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kane-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure (downloads pinned Chromium Embedded Framework)
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Build KANE browser module and memory-policy tests
+        run: cmake --build build --config Release --parallel 2
+
+      - name: Run memory-policy tests
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Assemble Windows application
+        shell: pwsh
+        run: |
+          $package = "KANE-Windows-x64"
+          $cefRoot = Get-ChildItem "build/third_party/cef/cef_binary_*_windows64" -Directory |
+            Where-Object { $_.Name -notmatch "_minimal|_client|_sandbox" } |
+            Select-Object -First 1
+          if (!$cefRoot) {
+            throw "The official CEF Windows x64 distribution was not found under build/third_party/cef."
+          }
+
+          $module = Get-ChildItem "build" -Recurse -File -Filter "kane_browser.dll" | Select-Object -First 1
+          if (!$module) {
+            throw "KANE browser DLL was not produced. Build output: $((Get-ChildItem build -Recurse -File -Filter '*.dll' | Select-Object -ExpandProperty FullName) -join '; ')"
+          }
+          $output = $module.DirectoryName
+
+          # CEF's newer bootstrap architecture provides the bootstrap alongside
+          # the distribution/runtime files; search the full distribution and
+          # fail with a useful diagnostic if this build does not contain one.
+          $bootstrap = Get-ChildItem $cefRoot.FullName -Recurse -File -Filter "bootstrap.exe" |
+            Where-Object { $_.FullName -match '[\\/]Release[\\/]' } |
+            Select-Object -First 1
+          if (!$bootstrap) {
+            throw "No Release/bootstrap.exe was found in the official CEF package. Distribution: $($cefRoot.FullName). This CEF build needs a matching bootstrap target before it can be packaged."
+          }
+
+          Copy-Item $bootstrap.FullName (Join-Path $output "kane_browser.exe") -Force
+          New-Item -ItemType Directory -Force -Path $package | Out-Null
+          Copy-Item "$output/*" $package -Recurse -Force
+          Copy-Item "README.md" "$package/README.md"
+          $cefLicense = Join-Path $cefRoot.FullName "LICENSE.txt"
+          if (Test-Path $cefLicense) { Copy-Item $cefLicense "$package/LICENSE-CEF.txt" }
+
+          @(
+            "KANE Browser - Windows x64"
+            ""
+            "Run kane_browser.exe. Keep the EXE, DLL, CEF resources, and Locales folder together."
+            "Chromium is embedded through CEF."
+            "Uses CEF Chrome runtime UI with native browser tabs and navigation controls."
+            "Do not delete runtime files from this folder."
+          ) | Set-Content "$package/README-FIRST.txt"
+          Compress-Archive -Path "$package/*" -DestinationPath "KANE-Windows-x64.zip" -CompressionLevel Optimal
+
+      - name: Upload downloadable application
+        uses: actions/upload-artifact@v4
+        with:
+          name: KANE-Windows-x64
+          path: KANE-Windows-x64.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish release assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: KANE-Windows-x64.zip
