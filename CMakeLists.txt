@@ -29,6 +29,26 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}" "${CEF_ROOT}")
 # building the browser module under KANE's DLL name.
 set(KANE_CEF_SAMPLE_DIR "${CMAKE_BINARY_DIR}/cef_kane_sample")
 file(COPY "${CEF_ROOT}/tests/cefsimple/" DESTINATION "${KANE_CEF_SAMPLE_DIR}")
+
+# Give the browser a lightweight KANE start page instead of the upstream
+# sample's Google homepage. The page is embedded as a data URI, so packaging
+# does not need another nested assets directory or extra disk reads.
+set(KANE_CEF_SAMPLE_APP "${KANE_CEF_SAMPLE_DIR}/simple_app.cc")
+file(READ "${KANE_CEF_SAMPLE_APP}" KANE_CEF_SAMPLE_APP_CONTENT)
+string(FIND "${KANE_CEF_SAMPLE_APP_CONTENT}" "url = \"https://www.google.com\";" KANE_DEFAULT_URL_POSITION)
+if(KANE_DEFAULT_URL_POSITION EQUAL -1)
+    message(FATAL_ERROR "Could not patch the pinned CEF sample's default start URL.")
+endif()
+string(REPLACE
+    "#include \"tests/cefsimple/simple_app.h\""
+    "#include \"tests/cefsimple/simple_app.h\"\n#include \"include/cef_parser.h\"\n#include \"src/kane_home_page.h\""
+    KANE_CEF_SAMPLE_APP_CONTENT "${KANE_CEF_SAMPLE_APP_CONTENT}")
+string(REPLACE
+    "url = \"https://www.google.com\";"
+    "url = \"data:text/html;base64,\" + CefBase64Encode(kane::ui::kHomePageHtml, sizeof(kane::ui::kHomePageHtml) - 1).ToString();"
+    KANE_CEF_SAMPLE_APP_CONTENT "${KANE_CEF_SAMPLE_APP_CONTENT}")
+file(WRITE "${KANE_CEF_SAMPLE_APP}" "${KANE_CEF_SAMPLE_APP_CONTENT}")
+
 if(NOT EXISTS "${KANE_CEF_SAMPLE_DIR}/CMakeLists.txt")
     message(FATAL_ERROR "The selected CEF distribution does not include the cefsimple sample sources.")
 endif()
