@@ -47,6 +47,14 @@ string(REPLACE
     "url = \"https://www.google.com\";"
     "url = \"data:text/html;base64,\" + CefBase64Encode(kane::ui::kHomePageHtml, sizeof(kane::ui::kHomePageHtml) - 1).ToString();"
     KANE_CEF_SAMPLE_APP_CONTENT "${KANE_CEF_SAMPLE_APP_CONTENT}")
+# Prefer CEF's native Chrome runtime by default. Unlike the lightweight Alloy
+# runtime, Chrome runtime provides real browser chrome (including tabs and
+# address/navigation UI) instead of a bare content window. Alloy remains
+# available as an explicit opt-out for debugging with --use-alloy-style.
+string(REPLACE
+    "cef_runtime_style_t runtime_style = CEF_RUNTIME_STYLE_DEFAULT;"
+    "cef_runtime_style_t runtime_style = CEF_RUNTIME_STYLE_CHROME;"
+    KANE_CEF_SAMPLE_APP_CONTENT "${KANE_CEF_SAMPLE_APP_CONTENT}")
 file(WRITE "${KANE_CEF_SAMPLE_APP}" "${KANE_CEF_SAMPLE_APP_CONTENT}")
 
 if(NOT EXISTS "${KANE_CEF_SAMPLE_DIR}/CMakeLists.txt")
