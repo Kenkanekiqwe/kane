@@ -41,7 +41,8 @@ jobs:
           New-Item -ItemType Directory -Force -Path $package | Out-Null
           Copy-Item "$output/*" $package -Recurse -Force
           Copy-Item "README.md" "$package/README.md"
-          Copy-Item "LICENSE.txt" "$package/LICENSE-KANE.txt"
+          $cefLicense = Get-ChildItem "build/third_party/cef/cef_binary_*/LICENSE.txt" | Select-Object -First 1
+          if ($cefLicense) { Copy-Item $cefLicense.FullName "$package/LICENSE-CEF.txt" }
           @(
             "KANE Browser - Windows x64"
             ""
