@@ -70,7 +70,7 @@ jobs:
             ""
             "Run kane_browser.exe. Keep the EXE, DLL, CEF resources, and Locales folder together."
             "Chromium is embedded through CEF."
-            "The browser chrome is still a temporary CEF sample UI."
+            "Uses CEF Chrome runtime UI with native browser tabs and navigation controls."
             "Do not delete runtime files from this folder."
           ) | Set-Content "$package/README-FIRST.txt"
           Compress-Archive -Path "$package/*" -DestinationPath "KANE-Windows-x64.zip" -CompressionLevel Optimal
