@@ -20,7 +20,7 @@ Install Visual Studio 2022 with the Desktop development with C++ workload and a 
 From a **Developer PowerShell for VS 2022**:
 
 ```powershell
-cmake -S . -B build -A x64
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64
 cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 .\build\Release\kane_browser.exe
