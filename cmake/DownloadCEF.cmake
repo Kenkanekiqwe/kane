@@ -2,14 +2,15 @@
 # The archive URL and SHA-1 are pinned by the caller's version string and the
 # official CEF build server's sidecar checksum.
 function(kane_download_cef platform version download_dir)
-  set(distribution "cef_binary_${version}_${platform}_minimal")
+  set(distribution "cef_binary_${version}_${platform}")
   set(archive "${download_dir}/${distribution}.tar.bz2")
   set(root "${download_dir}/${distribution}")
   file(MAKE_DIRECTORY "${download_dir}")
 
   if(NOT IS_DIRECTORY "${root}")
     string(REPLACE "+" "%2B" escaped_version "${version}")
-    set(url "https://cef-builds.spotifycdn.com/cef_binary_${version}_${platform}_minimal.tar.bz2")
+    string(REPLACE "+" "%2B" escaped_version "${version}")
+    set(url "https://cef-builds.spotifycdn.com/cef_binary_${escaped_version}_${platform}.tar.bz2")
     set(checksum_url "${url}.sha1")
     message(STATUS "Downloading CEF checksum: ${checksum_url}")
     file(DOWNLOAD "${checksum_url}" "${archive}.sha1" STATUS checksum_status)
@@ -21,7 +22,7 @@ function(kane_download_cef platform version download_dir)
     string(STRIP "${expected_sha1}" expected_sha1)
 
     if(NOT EXISTS "${archive}")
-      message(STATUS "Downloading CEF runtime (~165 MB)")
+      message(STATUS "Downloading official CEF standard distribution (~350 MB)")
       file(DOWNLOAD "${url}" "${archive}" SHOW_PROGRESS EXPECTED_HASH SHA1=${expected_sha1} STATUS download_status)
       list(GET download_status 0 download_code)
       if(NOT download_code EQUAL 0)
