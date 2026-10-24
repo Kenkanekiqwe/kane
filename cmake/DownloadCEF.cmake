@@ -21,7 +21,7 @@ function(kane_download_cef platform version download_dir)
     string(STRIP "${expected_sha1}" expected_sha1)
 
     if(NOT EXISTS "${archive}")
-      message(STATUS "Downloading official CEF standard distribution (~350 MB)")
+      message(STATUS "Downloading official CEF distribution with sandbox bootstrap")
       file(DOWNLOAD "${url}" "${archive}" SHOW_PROGRESS EXPECTED_HASH SHA1=${expected_sha1} STATUS download_status)
       list(GET download_status 0 download_code)
       if(NOT download_code EQUAL 0)
