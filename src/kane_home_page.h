@@ -18,7 +18,7 @@ h2{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--mute
 <a class="tile" href="https://www.twitch.tv"><span class="icon">▣</span><span><span class="name">Twitch</span><br><span class="hint">Live streams</span></span></a>
 <a class="tile" href="https://duckduckgo.com"><span class="icon">D</span><span><span class="name">DuckDuckGo</span><br><span class="hint">Private search</span></span></a>
 </div><footer>Built for focus. Designed to stay out of your way.</footer></main>
-<script>document.getElementById('search').addEventListener('submit',function(e){e.preventDefault();const value=document.getElementById('query').value.trim();if(!value)return;const scheme=/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value);const address=/^(localhost|[0-9.]+|[^\s]+\.[a-zA-Z]{2,})(:\d+)?(\/.*)?$/.test(value);location.href=(scheme||address)?(scheme?value:'https://'+value):'https://duckduckgo.com/?q='+encodeURIComponent(value);});</script>
+<script>document.getElementById('search').addEventListener('submit',function(e){e.preventDefault();const value=document.getElementById('query').value.trim();if(!value)return;const scheme=/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value);const address=value==='localhost'||(value.indexOf('.')>0&&!value.includes(' '));location.href=(scheme||address)?(scheme?value:'https://'+value):'https://duckduckgo.com/?q='+encodeURIComponent(value);});</script>
 </body></html>
 )KANEHTML";
 }
