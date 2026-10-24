@@ -14,32 +14,42 @@ permissions:
 jobs:
   build:
     runs-on: windows-2022
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure
+      - name: Configure (downloads pinned Chromium Embedded Framework)
         run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
 
-      - name: Build
-        run: cmake --build build --config Release
+      - name: Build KANE and CEF sandbox
+        run: cmake --build build --config Release --parallel 2
 
-      - name: Test
+      - name: Run memory-policy tests
         run: ctest --test-dir build -C Release --output-on-failure
 
-      - name: Package KANE app
+      - name: Package full Windows application
         shell: pwsh
         run: |
+          $output = "build/Release"
           $package = "KANE-Windows-x64"
+          if (!(Test-Path "$output/kane_browser.exe")) {
+            throw "CEF bootstrap executable was not produced."
+          }
+          if (!(Test-Path "$output/kane_browser.dll")) {
+            throw "KANE CEF browser module was not produced."
+          }
           New-Item -ItemType Directory -Force -Path $package | Out-Null
-          Copy-Item "build/Release/kane_browser.exe" "$package/kane_browser.exe"
+          Copy-Item "$output/*" $package -Recurse -Force
           Copy-Item "README.md" "$package/README.md"
+          Copy-Item "LICENSE.txt" "$package/LICENSE-KANE.txt"
           @(
-            "KANE Browser - Windows x64 build"
+            "KANE Browser - Windows x64"
             ""
-            "This is an early native UI preview. Chromium is not integrated yet, so it does not load websites."
-            "Run kane_browser.exe on Windows 10/11 x64."
+            "Run kane_browser.exe. Keep the EXE, DLL, CEF resources, and Locales folder together."
+            "The first Chromium integration is active; the browser chrome is a temporary CEF sample UI."
+            "Do not delete files from this folder: Chromium requires its runtime resources."
           ) | Set-Content "$package/README-FIRST.txt"
-          Compress-Archive -Path "$package/*" -DestinationPath "KANE-Windows-x64.zip" -Force
+          Compress-Archive -Path "$package/*" -DestinationPath "KANE-Windows-x64.zip" -CompressionLevel Optimal
 
       - name: Upload downloadable application
         uses: actions/upload-artifact@v4
@@ -47,9 +57,7 @@ jobs:
           name: KANE-Windows-x64
           path: |
             KANE-Windows-x64.zip
-            KANE-Windows-x64/kane_browser.exe
-            KANE-Windows-x64/README.md
-            KANE-Windows-x64/README-FIRST.txt
+            KANE-Windows-x64/
           if-no-files-found: error
           retention-days: 30
 
@@ -57,6 +65,4 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            KANE-Windows-x64.zip
-            KANE-Windows-x64/kane_browser.exe
+          files: KANE-Windows-x64.zip
