@@ -3,9 +3,13 @@ name: Windows build
 on:
   push:
     branches: [main, "bootstrap/**"]
+    tags: ["v*"]
   pull_request:
     branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -21,3 +25,38 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Package KANE app
+        shell: pwsh
+        run: |
+          $package = "KANE-Windows-x64"
+          New-Item -ItemType Directory -Force -Path $package | Out-Null
+          Copy-Item "build/Release/kane_browser.exe" "$package/kane_browser.exe"
+          Copy-Item "README.md" "$package/README.md"
+          @(
+            "KANE Browser - Windows x64 build"
+            ""
+            "This is an early native UI preview. Chromium is not integrated yet, so it does not load websites."
+            "Run kane_browser.exe on Windows 10/11 x64."
+          ) | Set-Content "$package/README-FIRST.txt"
+          Compress-Archive -Path "$package/*" -DestinationPath "KANE-Windows-x64.zip" -Force
+
+      - name: Upload downloadable application
+        uses: actions/upload-artifact@v4
+        with:
+          name: KANE-Windows-x64
+          path: |
+            KANE-Windows-x64.zip
+            KANE-Windows-x64/kane_browser.exe
+            KANE-Windows-x64/README.md
+            KANE-Windows-x64/README-FIRST.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish release assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            KANE-Windows-x64.zip
+            KANE-Windows-x64/kane_browser.exe
