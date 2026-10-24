@@ -14,23 +14,19 @@ endif()
 # can be reviewed as explicit version changes.
 set(KANE_CEF_VERSION "154.0.34+g14c5a08+chromium-154.0.8037.98")
 include(cmake/DownloadCEF.cmake)
-# M138+ CEF uses a prebuilt bootstrap.exe with the sandbox-enabled client DLL.
-kane_download_cef(windows64_sandbox "${KANE_CEF_VERSION}" "${CMAKE_BINARY_DIR}/third_party/cef")
+# CEF publishes the standard Windows x64 package as windows64. The sandbox
+# bootstrap is part of the newer CEF process architecture, not a package suffix.
+kane_download_cef(windows64 "${KANE_CEF_VERSION}" "${CMAKE_BINARY_DIR}/third_party/cef")
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CEF_ROOT}/cmake")
 set(USE_SANDBOX ON CACHE BOOL "Build KANE with the CEF Windows sandbox" FORCE)
 find_package(CEF REQUIRED)
 
-# CEF's own wrapper target and helper macros are required by the official
-# cefsimple sample used as the first embedded-engine integration milestone.
 add_subdirectory("${CEF_LIBCEF_DLL_WRAPPER_PATH}" "${CMAKE_BINARY_DIR}/cef_libcef_dll_wrapper")
-
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}" "${CEF_ROOT}")
 
-# Use the official CEF sample implementation as the initial process/lifecycle
-# harness, but build its browser module under KANE's DLL name. The matching
-# bootstrap.exe is supplied by the official sandbox distribution and is copied
-# into the runtime directory by the packaging workflow.
+# Use CEF's official sample as the initial process/lifecycle harness while
+# building the browser module under KANE's DLL name.
 set(KANE_CEF_SAMPLE_DIR "${CMAKE_BINARY_DIR}/cef_kane_sample")
 file(COPY "${CEF_ROOT}/tests/cefsimple/" DESTINATION "${KANE_CEF_SAMPLE_DIR}")
 if(NOT EXISTS "${KANE_CEF_SAMPLE_DIR}/CMakeLists.txt")
