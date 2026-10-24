@@ -9,7 +9,6 @@ function(kane_download_cef platform version download_dir)
 
   if(NOT IS_DIRECTORY "${root}")
     string(REPLACE "+" "%2B" escaped_version "${version}")
-    string(REPLACE "+" "%2B" escaped_version "${version}")
     set(url "https://cef-builds.spotifycdn.com/cef_binary_${escaped_version}_${platform}.tar.bz2")
     set(checksum_url "${url}.sha1")
     message(STATUS "Downloading CEF checksum: ${checksum_url}")
