@@ -2,7 +2,7 @@ name: Windows build
 
 on:
   push:
-    branches: [main, "bootstrap/**"]
+    branches: [main]
     tags: ["v*"]
   pull_request:
     branches: [main]
@@ -79,9 +79,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: KANE-Windows-x64
-          path: |
-            KANE-Windows-x64.zip
-            KANE-Windows-x64/
+          path: KANE-Windows-x64.zip
           if-no-files-found: error
           retention-days: 30
 
